@@ -1,0 +1,203 @@
+@startuml axios_components
+' Діаграма компонентів lib/ бібліотеки axios (коміт 326843a), ПР2, варіант 9
+' Дані: madge 8.0 / dependency-cruiser 16.10 (72 модулі, 177 залежностей), згруповано в 14 компонентів
+' Число на стрілці — кількість імпортів між модулями компонентів; червоні стрілки — двонапрямні зв'язки
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 12
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam ArrowColor #555555
+skinparam packageBackgroundColor #FAFAFA
+skinparam linetype polyline
+skinparam nodesep 40
+skinparam ranksep 90
+top to bottom direction
+
+package "Вхідна точка" {
+  component "Entry\nlib/axios.js" as Entry
+}
+package "Ядро: lib/core, cancel, defaults" {
+  component "Axios + InterceptorManager\nmergeConfig, buildFullPath\n(core/, 6 модулів)" as AxiosCore
+  component "dispatchRequest\ntransformData, settle\n(core/, 5 модулів)" as dispatch
+  component "AxiosHeaders\n(Ca = 10)" as AxiosHeaders #E3F2FD;line:1565C0
+  component "AxiosError\n(Ca = 18)" as AxiosError #E3F2FD;line:1565C0
+  component "cancel/\n(3 модулі)" as cancel
+  component "defaults/\n(2 модулі)" as defaults
+}
+package "Транспорт: lib/adapters" {
+  component "adapters.js\n(вибір адаптера)" as adapterSelector
+  component "http.js\n1231 NLOC, max M = 106\nCe = 23 + 12 зовн." as http #FFE0B2;line:E65100;line.bold
+  component "xhr.js\n291 NLOC, max M = 28" as xhr #FFF9C4;line:F9A825
+  component "fetch.js\n583 NLOC, max M = 134" as fetch #FFE0B2;line:E65100;line.bold
+}
+package "Підтримка: helpers, utils, platform" {
+  component "helpers/\n36 модулів\n(in 10 / out 7 компонентів)" as helpers #FFCDD2;line:C62828;line.bold
+  component "utils.js\n1201 рядок, 63 експорти\n(Ca = 30)" as utils #FFCDD2;line:C62828;line.bold
+  component "platform/ + env/\n(12 модулів)" as platform
+}
+
+AxiosCore -[#9E9E9E]-> AxiosError : 3
+AxiosCore --> AxiosHeaders : 2
+AxiosCore -[#C62828,bold]-> defaults
+AxiosCore --> dispatch
+AxiosCore -[#C62828,bold]-> helpers : 5
+AxiosCore -[#9E9E9E]-> utils : 4
+AxiosError --> AxiosHeaders
+AxiosError -[#9E9E9E]-> utils
+AxiosHeaders -[#C62828,bold]-> helpers : 2
+AxiosHeaders -[#9E9E9E]-> utils
+Entry --> AxiosCore : 2
+Entry -[#9E9E9E]-> AxiosError
+Entry --> AxiosHeaders
+Entry --> adapterSelector
+Entry --> cancel : 3
+Entry --> defaults
+Entry --> helpers : 6
+Entry --> platform
+Entry -[#9E9E9E]-> utils
+adapterSelector -[#9E9E9E]-> AxiosError
+adapterSelector --> fetch
+adapterSelector --> http
+adapterSelector -[#9E9E9E]-> utils
+adapterSelector --> xhr
+cancel -[#9E9E9E]-> AxiosError
+defaults -[#C62828,bold]-> AxiosCore
+defaults -[#9E9E9E]-> AxiosError
+defaults --> helpers : 3
+defaults --> platform
+defaults -[#9E9E9E]-> utils
+dispatch -[#9E9E9E]-> AxiosError : 2
+dispatch --> AxiosHeaders : 2
+dispatch --> adapterSelector
+dispatch --> cancel : 2
+dispatch --> defaults : 2
+dispatch -[#C62828,bold]-> helpers
+dispatch --> platform
+dispatch -[#9E9E9E]-> utils : 3
+fetch -[#9E9E9E]-> AxiosError
+fetch --> AxiosHeaders
+fetch --> dispatch : 2
+fetch --> helpers : 6
+fetch --> platform : 2
+fetch -[#9E9E9E]-> utils
+helpers -[#C62828,bold]-> AxiosCore : 2
+helpers -[#9E9E9E]-> AxiosError : 6
+helpers -[#C62828,bold]-> AxiosHeaders
+helpers --> cancel
+helpers -[#C62828,bold]-> dispatch
+helpers -[#C62828,bold]-> platform : 9
+helpers -[#C62828,bold]-> utils : 15
+http --> AxiosCore
+http -[#9E9E9E]-> AxiosError
+http --> AxiosHeaders
+http --> cancel
+http --> defaults
+http --> dispatch : 2
+http --> helpers : 13
+http --> platform : 2
+http -[#9E9E9E]-> utils
+platform -[#C62828,bold]-> helpers
+utils -[#C62828,bold]-> helpers
+xhr -[#9E9E9E]-> AxiosError
+xhr --> AxiosHeaders
+xhr --> cancel
+xhr --> defaults
+xhr --> dispatch
+xhr --> helpers : 6
+xhr --> platform
+xhr -[#9E9E9E]-> utils
+
+' порядок шарів зверху вниз
+Entry -[hidden]down-> adapterSelector
+http -[hidden]down-> AxiosCore
+AxiosHeaders -[hidden]down-> helpers
+
+legend right
+  |= Позначення |= Значення |
+  |<#FFCDD2> | хаб: аномально велика кількість зв'язків (кандидат God Object) |
+  |<#FFE0B2> | компонент із функціями M > 50 (Spaghetti Code) |
+  |<#FFF9C4> | компонент із функцією M > 20 |
+  |<#E3F2FD> | стабільна абстракція: високе Ca, висока зв'язність |
+  | <color:#C62828>━━▶</color> | двонапрямна залежність між компонентами (порушення шарів) |
+  | <color:#9E9E9E>━━▶</color> | залежність від utils.js / AxiosError (показано сірим для читабельності) |
+  | число | кількість імпортів між модулями компонентів |
+endlegend
+@enduml
+
+@startuml fragment_god_object_utils
+' Фрагмент 1: God Object — вхідні залежності utils.js (Ca = 30 модулів з 71)
+skinparam defaultFontName "DejaVu Sans"
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+package "Імпортують utils.js" {
+  component "helpers/\n15 модулів" as h
+  component "core/\n9 модулів" as c
+  component "adapters/\n4 модулі" as a
+  component "defaults/index.js" as d
+  component "axios.js" as e
+}
+component "utils.js\n1201 рядок · 63 експорти\n34 функції перевірки типів is*()\n11 експортів не використовує ніхто\nмедіана: 3 функції на клієнта" as u #FFCDD2;line:C62828;line.bold
+component "helpers/bind.js" as b
+h --> u : 15
+c --> u : 9
+a --> u : 4
+d --> u : 1
+e --> u : 1
+u -[#C62828,bold]-> b : цикл helpers ↔ utils
+note bottom of u
+  Ca = 30 при медіані Ca = 1 по 72 модулях
+  Ca + Ce = 31 при медіані 3 (у 10 разів більше)
+end note
+@enduml
+
+@startuml fragment_stovepipe_adapters
+' Фрагмент 2: Stovepipe System — три адаптери без спільного шару
+skinparam defaultFontName "DejaVu Sans"
+skinparam componentStyle rectangle
+skinparam shadowing false
+component "adapters.js\n(вибір адаптера)" as sel
+package "Ізольовані «труби» транспорту (жодних зв'язків між собою)" {
+  component "http.js (Node.js)\nвласне формування URL\n(buildFullPath + buildURL)\nвласні auth, timeout,\ndecodeURIComponentSafe" as http #FFE0B2;line:E65100;line.bold
+  component "xhr.js (браузер)\nвласне повідомлення\nпро таймаут" as xhr #FFF9C4;line:F9A825
+  component "fetch.js (браузер)\nвласні auth,\ndecodeURIComponentSafe" as fetch #FFE0B2;line:E65100;line.bold
+}
+package "Частково спільне (helpers/)" {
+  component "progressEventReducer\nsanitizeHeaderValue" as shared #C8E6C9
+  component "resolveConfig\n(URL, auth, XSRF, FormData)" as rc
+}
+sel --> http
+sel --> xhr
+sel --> fetch
+http --> shared
+xhr --> shared
+fetch --> shared
+xhr --> rc
+fetch --> rc
+http .[#C62828].> rc : не використовує,\nдублює логіку
+http .[#C62828].. fetch : клон decodeURIComponentSafe\nта витягування auth
+http .[#C62828].. xhr : дублювання формування\nпомилки таймауту
+@enduml
+
+@startuml fragment_layer_violations
+' Фрагмент 3: порушення шарів — залежності helpers/ → core/ (10 імпортів)
+skinparam defaultFontName "DejaVu Sans"
+skinparam componentStyle rectangle
+skinparam shadowing false
+package "core/ (вищий шар)" {
+  component "AxiosError" as ae #E3F2FD;line:1565C0
+  component "AxiosHeaders" as ah #E3F2FD;line:1565C0
+  component "mergeConfig\nbuildFullPath\nsetFormDataHeaders" as cfg
+  component "Axios.js\nAxiosHeaders.js" as core
+}
+package "helpers/ (нижчий шар)" {
+  component "resolveConfig.js\n(5 імпортів з core/)" as rc #FFCDD2;line:C62828;line.bold
+  component "validator, toFormData,\nfromDataURI, formDataToJSON,\ncomposeSignals" as hs
+  component "buildURL, validator,\nparseHeaders,\nsanitizeHeaderValue" as hd
+}
+rc -[#C62828,bold]-> cfg : 3
+rc -[#C62828,bold]-> ae
+rc -[#C62828,bold]-> ah
+hs -[#C62828,bold]-> ae : 5
+core --> hd : core → helpers\n(очікуваний напрям)
+@enduml
