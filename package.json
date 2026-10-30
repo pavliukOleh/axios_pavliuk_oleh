@@ -158,6 +158,7 @@
     "@rollup/plugin-terser": "^1.0.0",
     "@vitest/browser": "^4.1.9",
     "@vitest/browser-playwright": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.11",
     "abortcontroller-polyfill": "^1.7.8",
     "acorn": "^8.17.0",
     "body-parser": "^2.3.0",
